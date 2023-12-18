@@ -3,42 +3,63 @@ import decoratorWrapper from "../decorators/decoratorWrapper.js";
 import ContactModel from "../models/contacts.js";
 
 const getAllContacts = async (req, res) => {
-  const result = await ContactModel.find({}, "-createdAt -updatedAt");
-  res.status(200).json(result);
+  const { _id: owner } = req.user;
+  const { page = 1, limit = 20 } = req.query;
+  const skip = (page - 1) * limit;
+
+  const result = await ContactModel.find({ owner }, "-createdAt -updatedAt", {
+    skip,
+    limit,
+  });
+
+  const total = await ContactModel.countDocuments({ owner });
+  res.json({ result, total });
 };
 
 const getById = async (req, res) => {
-  const result = await ContactModel.findById(req.params.contactId);
+  const { contactId } = req.params;
+  const { _id: owner } = req.user;
+  const result = await ContactModel.findOne({ _id: contactId, owner });
 
   if (!result) {
     throw GenerateError(404, "Not Found");
   }
 
-  res.status(200).json(result);
+  res.json(result);
 };
 
 const postOneContact = async (req, res) => {
-  const result = await ContactModel.create(req.body);
+  const { _id: owner } = req.user;
+
+  const result = await ContactModel.create({ ...req.body, owner });
   res.status(201).json(result);
 };
 
 const putById = async (req, res) => {
   const { contactId } = req.params;
-  const result = await ContactModel.findByIdAndUpdate(contactId, req.body);
+  const { _id: owner } = req.user;
+
+  const result = await ContactModel.findOneAndUpdate(
+    { _id: contactId, owner },
+    req.body
+  );
   if (!result) {
     throw GenerateError(404, "Not found");
   }
 
-  res.status(200).json(result);
+  res.json(result);
 };
 
 const deleteById = async (req, res) => {
-  const result = await ContactModel.findByIdAndDelete(req.params.contactId);
+  const { contactId } = req.params;
+  const { _id: owner } = req.user;
+
+  const result = await ContactModel.findOneAndDelete({ _id: contactId, owner });
   if (!result) {
     throw GenerateError(404, "Not found");
   }
 
-  res.status(200).json({ message: "Contact deleted" });
+  res.json({ message: "Contact deleted" });
 };
 
 export default {
