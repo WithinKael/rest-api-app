@@ -9,6 +9,7 @@ import {
   updateContactSchema,
   updateFavoriteSchema,
 } from "../../models/contacts.js";
+import upload from "../../middleware/upload.js";
 
 const contactsRouter = express.Router();
 
@@ -20,6 +21,7 @@ contactsRouter.get("/:contactId", isValidId, contactsController.getById);
 
 contactsRouter.post(
   "/",
+  upload.single("avatar"),
   isEmptyBody,
   validateBody(addContactValidSchema),
   contactsController.postOneContact

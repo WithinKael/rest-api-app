@@ -10,7 +10,17 @@ import decoratorWrapper from "../decorators/decoratorWrapper.js";
 
 import UserModel from "../models/users.js";
 
+import gravatar from "gravatar";
+
+import path from "path";
+
+import fs from "fs/promises";
+
+import Jimp from "jimp";
+
 const { JWT_SECRET } = process.env;
+
+const avatarsPath = path.resolve("public", "avatars");
 
 const signUp = async (req, res) => {
   const { email, password } = req.body;
@@ -20,8 +30,13 @@ const signUp = async (req, res) => {
   }
 
   const hashedPass = await bcrypt.hash(password, 10);
+  const avatarURL = gravatar.url(email);
 
-  const newUser = await UserModel.create({ ...req.body, password: hashedPass });
+  const newUser = await UserModel.create({
+    ...req.body,
+    password: hashedPass,
+    avatarURL,
+  });
 
   res.status(201).json({
     username: newUser.username,
@@ -53,6 +68,7 @@ const signIn = async (req, res) => {
 
   res.json({
     token,
+    user,
   });
 };
 
@@ -74,9 +90,24 @@ const signOut = async (req, res) => {
   });
 };
 
+const updateAvatar = async (req, res) => {
+  const { _id } = req.user;
+  const { path: oldPath, filename } = req.file;
+  const resultUpload = path.join(avatarsPath, filename);
+  (await Jimp.read(oldPath)).resize(250, 250).write(resultUpload);
+  await fs.unlink(oldPath);
+  const avatarURL = path.join("avatars", filename);
+  await UserModel.findByIdAndUpdate(_id, { avatarURL });
+
+  res.json({
+    avatarURL,
+  });
+};
+
 export default {
   signUp: decoratorWrapper(signUp),
   signIn: decoratorWrapper(signIn),
   getCurrent: decoratorWrapper(getCurrent),
   signOut: decoratorWrapper(signOut),
+  updateAvatar: decoratorWrapper(updateAvatar),
 };
