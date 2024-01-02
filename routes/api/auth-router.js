@@ -8,7 +8,11 @@ import authController from "../../controllers/auth-controller.js";
 
 import authenticate from "../../middleware/authenticate.js";
 
-import { userSignUpSchema, userSignInSchema } from "../../models/users.js";
+import {
+  userSignUpSchema,
+  userSignInSchema,
+  userEmailSchema,
+} from "../../models/users.js";
 
 import upload from "../../middleware/upload.js";
 
@@ -19,6 +23,15 @@ authRouter.post(
   isEmptyBody,
   validateBody(userSignUpSchema),
   authController.signUp
+);
+
+authRouter.get("/verify/:verificationCode", authController.verify);
+
+authRouter.post(
+  "/verify",
+  isEmptyBody,
+  validateBody(userEmailSchema),
+  authController.resendVerify
 );
 
 authRouter.post(
